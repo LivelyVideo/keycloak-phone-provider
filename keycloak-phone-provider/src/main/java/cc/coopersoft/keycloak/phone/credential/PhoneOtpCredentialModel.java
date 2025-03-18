@@ -118,6 +118,18 @@ public class PhoneOtpCredentialModel extends CredentialModel {
 
         private final int expires;
 
+        public String getPhoneNumber() {
+            return phoneNumber;
+        }
+
+        public long getSecretCreate() {
+            return secretCreate;
+        }
+
+        public int getExpires() {
+            return expires;
+        }
+
         @JsonIgnore
         public boolean isSecretInvalid() {
             if (expires <= 0) {
