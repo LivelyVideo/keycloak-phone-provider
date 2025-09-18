@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class MessageSendException extends Exception {
 
     private Integer statusCode = -1;
