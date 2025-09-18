@@ -32,7 +32,7 @@
               </artifactItems>
               <outputDirectory>../target/providers</outputDirectory>
               <stripClassifier>true</stripClassifier>
-              <stripVersion>true</stripVersion>
+              <stripVersion>false</stripVersion>
             </configuration>
           </execution>
         </executions>
