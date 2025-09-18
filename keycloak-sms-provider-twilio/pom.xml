@@ -7,7 +7,7 @@
   <parent>
     <groupId>cc.coopersoft</groupId>
     <artifactId>keycloak-phone-provider-parent</artifactId>
-    <version>2.4.2-snapshot-lively</version>
+    <version>2.4.2-snapshot-lively-2</version>
   </parent>
 
   <artifactId>keycloak-sms-provider-twilio</artifactId>
@@ -16,13 +16,14 @@
     <dependency>
       <groupId>cc.coopersoft</groupId>
       <artifactId>keycloak-phone-provider</artifactId>
-      <version>2.4.2-snapshot-lively</version>
+      <version>2.4.2-snapshot-lively-2</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.twilio.sdk</groupId>
       <artifactId>twilio</artifactId>
-      <version>9.2.4</version>
+      <!-- Lively: Use newer Twilio sdk -->
+      <version>10.9.2</version>
     </dependency>
   </dependencies>
 
