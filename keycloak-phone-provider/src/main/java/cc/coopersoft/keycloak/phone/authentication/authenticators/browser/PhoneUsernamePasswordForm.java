@@ -107,6 +107,15 @@ public class PhoneUsernamePasswordForm extends UsernamePasswordForm implements A
     return form;
   }
 
+  /**
+   * Check if passkeys are enabled for this authenticator
+   *
+   * @return true if webauthn authenticator is available and passkeys are enabled
+   */
+  private boolean isPasskeysEnabled() {
+    return webauthnAuth != null && webauthnAuth.isPasskeysEnabled();
+  }
+
   @Override
   protected Response challenge(AuthenticationFlowContext context, MultivaluedMap<String, String> formData) {
     LoginFormsProvider forms = context.form();
@@ -122,10 +131,8 @@ public class PhoneUsernamePasswordForm extends UsernamePasswordForm implements A
     // Add phone-specific form attributes
     assemblyForm(context, forms);
 
-    boolean isPasskeysEnabled = webauthnAuth != null && webauthnAuth.isPasskeysEnabled();
-
     // Add WebAuthn/passkey challenge data if conditional passkeys are enabled
-    if (isPasskeysEnabled) {
+    if (isPasskeysEnabled()) {
       webauthnAuth.fillContextForm(context);
     }
 
@@ -138,7 +145,7 @@ public class PhoneUsernamePasswordForm extends UsernamePasswordForm implements A
     if (formData.containsKey("cancel")) {
       context.cancelLogin();
       return;
-    } else if (webauthnAuth != null && webauthnAuth.isPasskeysEnabled()
+    } else if (isPasskeysEnabled()
         && (formData.containsKey("authenticatorData") || formData.containsKey("error"))) {
       // WebAuthn form submission, delegate to webauthn authenticator
       webauthnAuth.action(context);
