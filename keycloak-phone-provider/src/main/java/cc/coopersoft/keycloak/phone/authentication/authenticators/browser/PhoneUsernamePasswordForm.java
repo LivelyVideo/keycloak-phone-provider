@@ -20,7 +20,6 @@ import org.keycloak.events.Errors;
 import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.models.*;
 import org.keycloak.models.credential.PasswordCredentialModel;
-import org.keycloak.models.credential.WebAuthnCredentialModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
@@ -123,8 +122,10 @@ public class PhoneUsernamePasswordForm extends UsernamePasswordForm implements A
     // Add phone-specific form attributes
     assemblyForm(context, forms);
 
+    boolean isPasskeysEnabled = webauthnAuth != null && webauthnAuth.isPasskeysEnabled();
+
     // Add WebAuthn/passkey challenge data if conditional passkeys are enabled
-    if (webauthnAuth != null && webauthnAuth.isPasskeysEnabled()) {
+    if (isPasskeysEnabled) {
       webauthnAuth.fillContextForm(context);
     }
 
