@@ -108,14 +108,6 @@ public class PhoneUsernamePasswordForm extends UsernamePasswordForm implements A
     return form;
   }
 
-  /**
-   * Helper method to check if conditional passkeys are enabled
-   */
-  protected boolean isConditionalPasskeysEnabled(UserModel currentUser) {
-    return webauthnAuth != null && webauthnAuth.isPasskeysEnabled() &&
-        (currentUser == null || currentUser.credentialManager().isConfiguredFor(WebAuthnCredentialModel.TYPE_PASSWORDLESS));
-  }
-
   @Override
   protected Response challenge(AuthenticationFlowContext context, MultivaluedMap<String, String> formData) {
     LoginFormsProvider forms = context.form();
