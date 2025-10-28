@@ -14,6 +14,7 @@ import org.keycloak.authentication.Authenticator;
 import org.keycloak.authentication.AuthenticatorFactory;
 import org.keycloak.authentication.authenticators.browser.AbstractUsernameFormAuthenticator;
 import org.keycloak.authentication.authenticators.browser.UsernamePasswordForm;
+import org.keycloak.authentication.authenticators.browser.WebAuthnConditionalUIAuthenticator;
 import org.keycloak.events.Details;
 import org.keycloak.events.Errors;
 import org.keycloak.forms.login.LoginFormsProvider;
@@ -41,6 +42,8 @@ public class PhoneUsernamePasswordForm extends UsernamePasswordForm implements A
 
   private static final Logger logger = Logger.getLogger(PhoneUsernamePasswordForm.class);
 
+  protected final WebAuthnConditionalUIAuthenticator webauthnAuth;
+
   public static final String PROVIDER_ID = "auth-phone-username-password-form";
 
   public static final String VERIFIED_PHONE_NUMBER = "LOGIN_BY_PHONE_VERIFY";
@@ -48,6 +51,28 @@ public class PhoneUsernamePasswordForm extends UsernamePasswordForm implements A
   private static final String CONFIG_IS_LOGIN_WITH_PHONE_VERIFY = "loginWithPhoneVerify";
 
   private static final String CONFIG_IS_LOGIN_WITH_PHONE_NUMBER = "loginWithPhoneNumber";
+
+  /**
+   * No-arg constructor for factory instantiation
+   */
+  public PhoneUsernamePasswordForm() {
+    webauthnAuth = null;
+  }
+
+  /**
+   * Session-based constructor with WebAuthn support
+   */
+  public PhoneUsernamePasswordForm(KeycloakSession session) {
+    webauthnAuth = new WebAuthnConditionalUIAuthenticator(session,
+        (context) -> createLoginForm(assemblyForm(context, context.form())));
+  }
+
+  /**
+   * Creates the login form response with phone support
+   */
+  protected Response createLoginForm(LoginFormsProvider form) {
+    return form.createLoginUsernamePassword();
+  }
 
   /**
    * use phone and password login
@@ -82,18 +107,54 @@ public class PhoneUsernamePasswordForm extends UsernamePasswordForm implements A
     return form;
   }
 
+  /**
+   * Check if passkeys are enabled for this authenticator
+   *
+   * @return true if webauthn authenticator is available and passkeys are enabled
+   */
+  private boolean isPasskeysEnabled() {
+    return webauthnAuth != null && webauthnAuth.isPasskeysEnabled();
+  }
+
   @Override
   protected Response challenge(AuthenticationFlowContext context, MultivaluedMap<String, String> formData) {
     LoginFormsProvider forms = context.form();
-    if (formData.size() > 0)
+    if (!formData.isEmpty())
       forms.setFormData(formData);
+
     if (Utils.isDuplicatePhoneAllowed(context.getSession())) {
       forms.setError("duplicatePhoneAllowedCantLogin");
       logger.warn("duplicate phone allowed! phone login is disabled!");
-    } else {
-      forms = assemblyForm(context, forms);
+      return forms.createLoginUsernamePassword();
     }
+
+    // Add phone-specific form attributes
+    assemblyForm(context, forms);
+
+    // Add WebAuthn/passkey challenge data if conditional passkeys are enabled
+    if (isPasskeysEnabled()) {
+      webauthnAuth.fillContextForm(context);
+    }
+
     return forms.createLoginUsernamePassword();
+  }
+
+  @Override
+  public void action(AuthenticationFlowContext context) {
+    MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
+    if (formData.containsKey("cancel")) {
+      context.cancelLogin();
+      return;
+    } else if (isPasskeysEnabled()
+        && (formData.containsKey("authenticatorData") || formData.containsKey("error"))) {
+      // WebAuthn form submission, delegate to webauthn authenticator
+      webauthnAuth.action(context);
+      return;
+    } else if (!validateForm(context, formData)) {
+      // Normal username/password or phone authentication
+      return;
+    }
+    context.success();
   }
 
   @Override
@@ -366,7 +427,7 @@ public class PhoneUsernamePasswordForm extends UsernamePasswordForm implements A
 
   @Override
   public Authenticator create(KeycloakSession session) {
-    return this;
+    return new PhoneUsernamePasswordForm(session);
   }
 
   @Override
